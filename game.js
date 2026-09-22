@@ -64,11 +64,12 @@ const POINTS = [0, 100, 50, 20];  // puntos por tamaño
 
 class Asteroid {
   constructor(x, y, size = 3) {
-    this.x    = x;
-    this.y    = y;
-    this.size = size;
+    this.x      = x;
+    this.y      = y;
+    this.size   = size;
     this.radius = RADII[size];
-    this.dead = false;
+    this.points = POINTS[size];
+    this.dead   = false;
 
     const angle = rand(0, Math.PI * 2);
     const speed = SPEEDS[size] + rand(-15, 15);
@@ -114,6 +115,92 @@ class Asteroid {
       ctx.lineTo(this.verts[i][0], this.verts[i][1]);
     ctx.closePath();
     ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ── Estrella fugaz ────────────────────────────────────────────────────────────
+class EstrellaFugaz extends Asteroid {
+  constructor(x, y) {
+    super(x, y, 2);
+    this.points = 75;
+    this.dead   = false;
+    this.radius = 22;
+    this.ttl    = rand(3.5, 5);   // segundos antes de desintegrarse
+
+    // Corre en línea recta, mucho más rápido que un asteroide normal
+    const angle = rand(0, Math.PI * 2);
+    const speed = rand(180, 240);
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+    this.rotSpeed = rand(0.5, 1.5);
+
+    // Polígono más compacto acorde al radio reducido
+    const n = randInt(8, 13);
+    this.verts = [];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const r = this.radius * rand(0.6, 1.0);
+      this.verts.push([Math.cos(a) * r, Math.sin(a) * r]);
+    }
+
+    this.trail = [];   // estela de posiciones recientes
+  }
+
+  update(dt) {
+    // Sin wrap: atraviesa la pantalla y muere al salir o al agotar su tiempo
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.rot += this.rotSpeed * dt;
+
+    this.trail.push([this.x, this.y]);
+    if (this.trail.length > 18) this.trail.shift();
+
+    this.ttl -= dt;
+    const offScreen = this.x < -60 || this.x > W + 60 ||
+                      this.y < -60 || this.y > H + 60;
+    if (this.ttl <= 0 || offScreen) {
+      if (this.ttl <= 0) explode(this.x, this.y, 12);   // se desintegra en chispas
+      this.dead = true;
+    }
+  }
+
+  split() { return []; }
+
+  draw() {
+    if (this.ttl < 0.8 && Math.floor(this.ttl * 10) % 2 === 0) return;  // parpadeo final
+    const alpha = this.ttl < 0.8 ? Math.max(this.ttl / 0.8, 0) : 1;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineJoin = 'round';
+
+    // Estela: trazos cada vez más viejos y tenues, opuestos al movimiento
+    for (let i = 0; i < this.trail.length; i++) {
+      const t = (i + 1) / this.trail.length;     // más nuevo = más brillante
+      const [tx, ty] = this.trail[i];
+      ctx.strokeStyle = `rgba(255, 190, 60, ${(t * 0.35 * alpha).toFixed(2)})`;
+      ctx.lineWidth   = 1 + t * 3;
+      ctx.beginPath();
+      ctx.moveTo(tx, ty);
+      ctx.lineTo(tx - this.vx * 0.05, ty - this.vy * 0.05);
+      ctx.stroke();
+    }
+
+    // Cuerpo del cometa con halo cálido
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rot);
+    ctx.shadowColor = '#ff9d00';
+    ctx.shadowBlur  = 16;
+    ctx.strokeStyle = `rgba(255, 215, 130, ${alpha.toFixed(2)})`;
+    ctx.lineWidth   = 2;
+    ctx.beginPath();
+    ctx.moveTo(this.verts[0][0], this.verts[0][1]);
+    for (let i = 1; i < this.verts.length; i++)
+      ctx.lineTo(this.verts[i][0], this.verts[i][1]);
+    ctx.closePath();
+    ctx.stroke();
+
     ctx.restore();
   }
 }
@@ -307,6 +394,16 @@ function spawnAsteroids(count) {
     } while (Math.hypot(x - W / 2, y - H / 2) < SAFE_DIST);
     asteroids.push(new Asteroid(x, y, 3));
   }
+
+  // Dos estrellas fugaces garantizadas por oleada
+  for (let i = 0; i < 2; i++) {
+    let x, y;
+    do {
+      x = rand(0, W);
+      y = rand(0, H);
+    } while (Math.hypot(x - W / 2, y - H / 2) < SAFE_DIST);
+    asteroids.push(new EstrellaFugaz(x, y));
+  }
 }
 
 function initGame() {
@@ -387,11 +484,12 @@ function update(dt) {
       if (!a.dead && !b.dead && dist(b, a) < a.radius) {
         b.dead = true;
         a.dead = true;
-        score += POINTS[a.size];
+        score += a.points;
         explode(a.x, a.y, a.size * 5);
         newAsteroids.push(...a.split());
-        // ~15% de probabilidad de soltar un power-up
-        if (Math.random() < 0.15) powerUps.push(new PowerUp(a.x, a.y));
+        // ~15% de probabilidad de soltar un power-up (la estrella fugaz no suelta)
+        if (!(a instanceof EstrellaFugaz) && Math.random() < 0.15)
+          powerUps.push(new PowerUp(a.x, a.y));
       }
     }
   }
