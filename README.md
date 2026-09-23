@@ -29,7 +29,8 @@ Luego visita `http://localhost:3000`.
 | `←` `→`   | Rotar nave         |
 | `↑`       | Propulsar          |
 | `Espacio` | Disparar           |
-| `K`       | Cambiar skin de la nave |
+| `S`       | Cambiar skin de la nave |
+| `D`       | Agrandar la nave (1 vez por nivel; al morir vuelve al tamaño normal) |
 
 ## Puntuación
 
@@ -38,6 +39,8 @@ Luego visita `http://localhost:3000`.
 | Grande    | 20     |
 | Mediano   | 50     |
 | Pequeño   | 100    |
+
+> Con la nave **Tarántula** activa, todos los puntos (incluida la estrella fugaz) se multiplican ×2.
 
 ## Características
 
@@ -52,13 +55,20 @@ Luego visita `http://localhost:3000`.
 
 ## Skins
 
-La nave puede cambiar de apariencia con la tecla `K`. Cada skin define su propia silueta, color y llama del propulsor; los iconos de vidas y la posición de disparo se adaptan automáticamente. Son puramente cosméticas: la hitbox, velocidad y jugabilidad son idénticas en todas.
+La nave puede cambiar de apariencia con la tecla `S`. Cada skin define su propia silueta, color y llama del propulsor; los iconos de vidas y la posición de disparo se adaptan automáticamente. Todas las naves tienen el mismo tamaño base (hitbox y velocidad idénticas), pero la **Tarántula** altera la jugabilidad: suma el doble de puntos y, al agrandarse, dispara una bala desde cada lado.
 
-| Skin       | Descripción                          |
-| ---------- | ------------------------------------ |
-| Halcón     | Silueta clásica blanca               |
-| Águila     | Panelas dobles y doradas             |
-| Libélula   | Cuerpo estrecho y alargado en cian   |
-| Escorpión  | Cola con aguijón en rojo/magenta     |
+Con la tecla `D` puedes **agrandar la skin activa** (×1.5, hitbox incluida): se aplica al modelo de la skin que tengas en ese momento y solo puede usarse **una vez por nivel** (al morir o pasar de nivel la nave vuelve a su tamaño de inicio). Mientras estés agrandado, el aviso **NAVE AGRANDADA** permanece visible en el HUD.
+
+Solo con la nave **agrandada** se habilita el **doble disparo**, según el modelo:
+- Naves con cañones laterales (p. ej. Tarántula): una bala desde cada lado.
+- El resto: un abanico centrado de dos balas.
+
+| Skin        | Descripción                                        |
+| ----------- | -------------------------------------------------- |
+| Halcón      | Silueta clásica blanca                             |
+| Águila      | Panelas dobles y doradas                           |
+| Libélula    | Cuerpo estrecho y alargado en cian                 |
+| Escorpión   | Cola con aguijón en rojo/magenta                   |
+| Tarántula   | Morada, doble puntos y 2 cañones laterales (activos al agrandarse) |
 
 La skin elegida se guarda en `localStorage` y se conserva al recargar la página.
