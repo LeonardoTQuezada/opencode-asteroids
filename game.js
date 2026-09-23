@@ -205,24 +205,34 @@ class EstrellaFugaz extends Asteroid {
   }
 }
 
-// ── Skins de la nave ──────────────────────────────────────────────────────────
-// Formato: name = etiqueta en HUD, color = trazo, verts = polígono (nariz en +X),
-// nose = distancia de la nariz (sale la bala), tail = X trasera (origen de la llama),
-// flame = color y longitud aleatoria de la llama. Puramente cosmético: radius,
-// velocidad y colisiones son iguales para todas.
+// ── Naves (skins) ─────────────────────────────────────────────────────────────
+// Formato: name = etiqueta en HUD, color = trazo, verts = polígono a escala 1×
+// (nariz en +X), nose = distancia de la nariz, tail = X trasera (origen de la
+// llama), flame = color y longitud aleatoria de la llama.
+// Campos de jugabilidad: scale = tamaño relativo a la clásica (2 = el doble,
+// también agranda la hitbox), scoreMult = multiplicador de puntos y
+// launchers = pares [x, y] locales de cada cañón (una bala por cañón).
 const SKINS = [
-  { id:'clasica',   name:'HALCÓN',    color:'#fff',
+  { id:'clasica',   name:'HALCÓN',    color:'#fff', scale:1, scoreMult:1,
     verts:[[20,0],[-12,-9],[-7,0],[-12,9]],
-    nose:21, tail:-8,  flame:{ color:'rgba(255,130,0,0.85)', len:[6,14] } },
-  { id:'aguila',    name:'ÁGUILA',    color:'#ffc94d',
+    nose:21, tail:-8,  flame:{ color:'rgba(255,130,0,0.85)', len:[6,14] },
+    launchers:[[21,0]] },
+  { id:'aguila',    name:'ÁGUILA',    color:'#ffc94d', scale:1, scoreMult:1,
     verts:[[22,0],[-4,-6],[-14,-12],[-10,0],[-14,12],[-4,6]],
-    nose:23, tail:-11, flame:{ color:'rgba(255,200,60,0.9)', len:[7,16] } },
-  { id:'libelula',  name:'LIBÉLULA',  color:'#0ff',
+    nose:23, tail:-11, flame:{ color:'rgba(255,200,60,0.9)', len:[7,16] },
+    launchers:[[23,0]] },
+  { id:'libelula',  name:'LIBÉLULA',  color:'#0ff', scale:1, scoreMult:1,
     verts:[[24,0],[-6,-5],[-14,-4],[-10,0],[-14,4],[-6,5]],
-    nose:25, tail:-14, flame:{ color:'rgba(0,255,255,0.85)', len:[5,12] } },
-  { id:'escorpion', name:'ESCORPIÓN', color:'#ff4d6d',
+    nose:25, tail:-14, flame:{ color:'rgba(0,255,255,0.85)', len:[5,12] },
+    launchers:[[25,0]] },
+  { id:'escorpion', name:'ESCORPIÓN', color:'#ff4d6d', scale:1, scoreMult:1,
     verts:[[18,0],[-2,-4],[-16,-14],[-13,-2],[-16,0],[-13,2],[-16,14],[-2,4]],
-    nose:20, tail:-16, flame:{ color:'rgba(255,70,110,0.9)', len:[6,15] } },
+    nose:20, tail:-16, flame:{ color:'rgba(255,70,110,0.9)', len:[6,15] },
+    launchers:[[20,0]] },
+  { id:'tarantula', name:'TARÁNTULA', color:'#a55cff', scale:2, scoreMult:2,
+    verts:[[26,0],[4,-5],[-8,-20],[-18,-13],[-22,0],[-18,13],[-8,20],[4,5]],
+    nose:27, tail:-20, flame:{ color:'rgba(190,120,255,0.9)', len:[10,22] },
+    launchers:[[26,-13],[26,13]] },
 ];
 
 const SKIN_KEY = 'asteroids.skin';
@@ -244,6 +254,8 @@ function cycleSkin() {
   currentSkin = (currentSkin + 1) % SKINS.length;
   saveSkin();
   skinNoticeTimer = 1.6;
+  // La hitbox cambia con el tamaño de la nave activa
+  if (ship) ship.radius = SKINS[currentSkin].scale * 12;
 }
 
 // Tuning del escudo (power-up "escudo")
@@ -261,7 +273,7 @@ class Ship {
     this.angle  = -Math.PI / 2;
     this.vx     = 0;
     this.vy     = 0;
-    this.radius = 12;
+    this.radius = SKINS[currentSkin].scale * 12;
     this.thrusting     = false;
     this.invincible    = 3;
     this.shootCooldown = 0;
@@ -302,21 +314,28 @@ class Ship {
   tryShoot() {
     if (this.shootCooldown > 0 || this.dead) return [];
     this.shootCooldown = 0.2;
-    const NOSE = SKINS[currentSkin].nose;   // la bala sale de la nariz de cada skin
-    const ox = this.x + Math.cos(this.angle) * NOSE;
-    const oy = this.y + Math.sin(this.angle) * NOSE;
+    const skin = SKINS[currentSkin];
+    const shots = [];
 
-    // Power-up "Triple shot": abanico de 3 balas (±10°)
-    if (this.tripleTimer > 0) {
-      const SPREAD = Math.PI / 18;   // 10° en radianes
-      return [
-        new Bullet(ox, oy, this.angle - SPREAD),
-        new Bullet(ox, oy, this.angle),
-        new Bullet(ox, oy, this.angle + SPREAD),
-      ];
+    // Cada cañón definido en la skin dispara una bala hacia delante
+    for (const [lx, ly] of skin.launchers) {
+      const ox = this.x + Math.cos(this.angle) * lx * skin.scale
+                     - Math.sin(this.angle) * ly * skin.scale;
+      const oy = this.y + Math.sin(this.angle) * lx * skin.scale
+                     + Math.cos(this.angle) * ly * skin.scale;
+
+      // Power-up "Triple shot": abanico de 3 balas (±10°) por cañón
+      if (this.tripleTimer > 0) {
+        const SPREAD = Math.PI / 18;   // 10° en radianes
+        shots.push(new Bullet(ox, oy, this.angle - SPREAD));
+        shots.push(new Bullet(ox, oy, this.angle));
+        shots.push(new Bullet(ox, oy, this.angle + SPREAD));
+      } else {
+        shots.push(new Bullet(ox, oy, this.angle));
+      }
     }
 
-    return [new Bullet(ox, oy, this.angle)];
+    return shots;
   }
 
   draw() {
@@ -329,6 +348,7 @@ class Ship {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
+    ctx.scale(skin.scale, skin.scale);
     ctx.strokeStyle = skin.color;
     ctx.lineWidth   = 1.5;
     ctx.lineJoin    = 'round';
@@ -590,7 +610,7 @@ function update(dt) {
       if (!a.dead && !b.dead && dist(b, a) < a.radius) {
         b.dead = true;
         a.dead = true;
-        score += a.points;
+        score += a.points * SKINS[currentSkin].scoreMult;
         explode(a.x, a.y, a.size * 5);
         newAsteroids.push(...a.split());
         // ~15% de probabilidad de soltar un power-up (la estrella fugaz no suelta)
@@ -614,7 +634,7 @@ function update(dt) {
         if (ship.shieldTimer > 0) {
           // El escudo destruye el objeto en vez de matar a la nave
           a.dead = true;
-          score += a.points;
+          score += a.points * SKINS[currentSkin].scoreMult;
           explode(a.x, a.y, a.size * 5, SHIELD_COLOR);
           newAsteroids.push(...a.split());
           ship.shieldCharges--;

@@ -39,6 +39,8 @@ Luego visita `http://localhost:3000`.
 | Mediano   | 50     |
 | Pequeño   | 100    |
 
+> Con la nave **Tarántula** activa, todos los puntos (incluida la estrella fugaz) se multiplican ×2.
+
 ## Características
 
 - 3 vidas con invencibilidad temporal al reaparecer (parpadeo)
@@ -52,13 +54,14 @@ Luego visita `http://localhost:3000`.
 
 ## Skins
 
-La nave puede cambiar de apariencia con la tecla `K`. Cada skin define su propia silueta, color y llama del propulsor; los iconos de vidas y la posición de disparo se adaptan automáticamente. Son puramente cosméticas: la hitbox, velocidad y jugabilidad son idénticas en todas.
+La nave puede cambiar de apariencia con la tecla `K`. Cada skin define su propia silueta, color y llama del propulsor; los iconos de vidas y la posición de disparo se adaptan automáticamente. La mayoría son puramente cosméticas (hitbox y velocidad idénticas), pero la **Tarántula** altera la jugabilidad: es el doble de grande (hitbox incluida), suma el doble de puntos y dispara dos balas a la vez, una desde cada lado de la nave.
 
-| Skin       | Descripción                          |
-| ---------- | ------------------------------------ |
-| Halcón     | Silueta clásica blanca               |
-| Águila     | Panelas dobles y doradas             |
-| Libélula   | Cuerpo estrecho y alargado en cian   |
-| Escorpión  | Cola con aguijón en rojo/magenta     |
+| Skin        | Descripción                                        |
+| ----------- | -------------------------------------------------- |
+| Halcón      | Silueta clásica blanca                             |
+| Águila      | Panelas dobles y doradas                           |
+| Libélula    | Cuerpo estrecho y alargado en cian                 |
+| Escorpión   | Cola con aguijón en rojo/magenta                   |
+| Tarántula   | Morada, el doble de grande, doble puntos y 2 cañones laterales |
 
 La skin elegida se guarda en `localStorage` y se conserva al recargar la página.
