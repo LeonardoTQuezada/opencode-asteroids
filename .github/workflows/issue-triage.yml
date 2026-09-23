@@ -118,7 +118,11 @@ jobs:
       - name: Run opencode
         shell: bash
         run: |
-          opencode run --standalone "$(cat /tmp/prompt.txt)" \
+          # Flags de la CLI V1 (la que instala curl -fsSL opencode.ai/install):
+          # V1 no tiene --standalone ni --dangerously-skip-permissions;
+          # los equivalentes son ejecutar normal y --auto. La auth del modelo
+          # opencode/big-pickle la da OPENCODE_API_KEY (como en opencode.yml).
+          opencode run "$(cat /tmp/prompt.txt)" \
             --model opencode/big-pickle \
             --format json \
             --dangerously-skip-permissions \
