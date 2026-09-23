@@ -209,9 +209,10 @@ class EstrellaFugaz extends Asteroid {
 // Formato: name = etiqueta en HUD, color = trazo, verts = polígono a escala 1×
 // (nariz en +X), nose = distancia de la nariz, tail = X trasera (origen de la
 // llama), flame = color y longitud aleatoria de la llama.
-// Campos de jugabilidad: scale = tamaño relativo a la clásica (2 = el doble,
-// también agranda la hitbox), scoreMult = multiplicador de puntos y
-// launchers = pares [x, y] locales de cada cañón (una bala por cañón).
+// Campos de jugabilidad: scale = tamaño base de la skin (todas a 1×), scoreMult
+// = multiplicador de puntos, launchers = cañones laterales [x, y] y dual = al
+// agrandarse dispara uno a cada lado (en tamaño normal usa el cañón centrado;
+// las naves sin dual disparan un abanico centrado al agrandarse).
 const SKINS = [
   { id:'clasica',   name:'HALCÓN',    color:'#fff', scale:1, scoreMult:1,
     verts:[[20,0],[-12,-9],[-7,0],[-12,9]],
@@ -229,10 +230,10 @@ const SKINS = [
     verts:[[18,0],[-2,-4],[-16,-14],[-13,-2],[-16,0],[-13,2],[-16,14],[-2,4]],
     nose:20, tail:-16, flame:{ color:'rgba(255,70,110,0.9)', len:[6,15] },
     launchers:[[20,0]] },
-  { id:'tarantula', name:'TARÁNTULA', color:'#a55cff', scale:2, scoreMult:2,
+  { id:'tarantula', name:'TARÁNTULA', color:'#a55cff', scale:1, scoreMult:2, dual:true,
     verts:[[26,0],[4,-5],[-8,-20],[-18,-13],[-22,0],[-18,13],[-8,20],[4,5]],
     nose:27, tail:-20, flame:{ color:'rgba(190,120,255,0.9)', len:[10,22] },
-    launchers:[[26,-13],[26,13]] },
+    launchers:[[6,-14],[6,14]] },
 ];
 
 const SKIN_KEY = 'asteroids.skin';
@@ -241,9 +242,8 @@ let skinNoticeTimer = 0;  // segundos restantes del aviso "SKIN: ..." en el HUD
 
 // Agrandar la nave con la tecla D: una sola vez por nivel
 const ENLARGE_FACTOR = 1.5;   // multiplicador de tamaño al agrandar
-let scaleBoost         = 1;   // 1 = tamaño base de la skin, ENLARGE_FACTOR = agrandada
-let enlargedThisLevel  = false;
-let enlargeNoticeTimer = 0;   // segundos restantes del aviso "TAMAÑO ×..." en el HUD
+let scaleBoost        = 1;    // 1 = tamaño base de la skin, ENLARGE_FACTOR = agrandada
+let enlargedThisLevel = false;
 
 // Tamaño efectivo de la skin activa (base × agrandamiento del nivel)
 function effectiveScale() {
@@ -257,9 +257,8 @@ function resetEnlarge() {
 
 function enlargeShip() {
   if (enlargedThisLevel) return;
-  enlargedThisLevel  = true;
-  scaleBoost         = ENLARGE_FACTOR;
-  enlargeNoticeTimer = 1.6;
+  enlargedThisLevel = true;
+  scaleBoost        = ENLARGE_FACTOR;
   if (ship) ship.radius = effectiveScale() * 12;
 }
 
@@ -340,23 +339,37 @@ class Ship {
     this.shootCooldown = 0.2;
     const skin = SKINS[currentSkin];
     const scale = effectiveScale();
+    const enlarged = scaleBoost > 1;   // el doble disparo solo con la nave agrandada
     const shots = [];
 
-    // Cada cañón definido en la skin dispara una bala hacia delante
-    for (const [lx, ly] of skin.launchers) {
+    const add = (lx, ly, angle) => {
       const ox = this.x + Math.cos(this.angle) * lx * scale
                      - Math.sin(this.angle) * ly * scale;
       const oy = this.y + Math.sin(this.angle) * lx * scale
                      + Math.cos(this.angle) * ly * scale;
+      shots.push(new Bullet(ox, oy, angle));
+    };
 
-      // Power-up "Triple shot": abanico de 3 balas (±10°) por cañón
+    const SPREAD = Math.PI / 18;   // 10° en radianes
+
+    // En tamaño normal se dispara un solo cañón (central); agrandadas, la skin
+    // "dual" dispara uno a cada lado y las demás un abanico centrado.
+    let barrels = [skin.launchers[0]];
+    if (enlarged && skin.dual) barrels = skin.launchers;
+    else if (enlarged) barrels = [[skin.launchers[0][0], 0]];
+
+    for (const [lx, ly] of barrels) {
       if (this.tripleTimer > 0) {
-        const SPREAD = Math.PI / 18;   // 10° en radianes
-        shots.push(new Bullet(ox, oy, this.angle - SPREAD));
-        shots.push(new Bullet(ox, oy, this.angle));
-        shots.push(new Bullet(ox, oy, this.angle + SPREAD));
+        // Power-up "Triple shot": abanico de 3 balas (±10°) por cañón
+        add(lx, ly, this.angle - SPREAD);
+        add(lx, ly, this.angle);
+        add(lx, ly, this.angle + SPREAD);
+      } else if (enlarged && !skin.dual) {
+        // Agrandada sin cañones laterales: doble disparo centrado en abanico
+        add(lx, ly, this.angle - SPREAD);
+        add(lx, ly, this.angle + SPREAD);
       } else {
-        shots.push(new Bullet(ox, oy, this.angle));
+        add(lx, ly, this.angle);
       }
     }
 
@@ -584,6 +597,7 @@ function explode(x, y, count = 8, color = '#fff') {
 function killShip() {
   explode(ship.x, ship.y, 14);
   ship.dead = true;
+  resetEnlarge();   // al morir la nave vuelve a su tamaño de inicio
   lives--;
   if (lives <= 0) {
     state = 'gameover';
@@ -599,7 +613,6 @@ function update(dt) {
   if (pressed('KeyS')) cycleSkin();
   if (pressed('KeyD')) enlargeShip();
   if (skinNoticeTimer > 0) skinNoticeTimer -= dt;
-  if (enlargeNoticeTimer > 0) enlargeNoticeTimer -= dt;
 
   if (state === 'gameover') {
     if (pressed('Space')) initGame();
@@ -797,13 +810,11 @@ function drawHUD() {
     ctx.fillStyle = '#fff';
   }
 
-  // Aviso temporal al agrandar la nave (una vez por nivel)
-  if (enlargeNoticeTimer > 0) {
+  // Aviso "NAVE AGRANDADA" visible mientras el agrandamiento siga activo
+  if (scaleBoost > 1) {
     ctx.textAlign = 'center';
-    ctx.globalAlpha = Math.min(enlargeNoticeTimer / 0.6, 1);
     ctx.fillStyle = '#fff';
-    ctx.fillText(`NAVE AGRANDADA ×${ENLARGE_FACTOR}`, W / 2, enlargeNoticeTimer > 0 && skinNoticeTimer > 0 ? 66 : 46);
-    ctx.globalAlpha = 1;
+    ctx.fillText(`NAVE AGRANDADA ×${ENLARGE_FACTOR}`, W / 2, skinNoticeTimer > 0 ? 66 : 46);
   }
 }
 

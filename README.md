@@ -30,7 +30,7 @@ Luego visita `http://localhost:3000`.
 | `↑`       | Propulsar          |
 | `Espacio` | Disparar           |
 | `S`       | Cambiar skin de la nave |
-| `D`       | Agrandar la nave (1 vez por nivel) |
+| `D`       | Agrandar la nave (1 vez por nivel; al morir vuelve al tamaño normal) |
 
 ## Puntuación
 
@@ -55,9 +55,13 @@ Luego visita `http://localhost:3000`.
 
 ## Skins
 
-La nave puede cambiar de apariencia con la tecla `S`. Cada skin define su propia silueta, color y llama del propulsor; los iconos de vidas y la posición de disparo se adaptan automáticamente. La mayoría son puramente cosméticas (hitbox y velocidad idénticas), pero la **Tarántula** altera la jugabilidad: es el doble de grande (hitbox incluida), suma el doble de puntos y dispara dos balas a la vez, una desde cada lado de la nave.
+La nave puede cambiar de apariencia con la tecla `S`. Cada skin define su propia silueta, color y llama del propulsor; los iconos de vidas y la posición de disparo se adaptan automáticamente. Todas las naves tienen el mismo tamaño base (hitbox y velocidad idénticas), pero la **Tarántula** altera la jugabilidad: suma el doble de puntos y, al agrandarse, dispara una bala desde cada lado.
 
-Con la tecla `D` puedes **agrandar la skin activa** (×1.5, hitbox incluida): se aplica al modelo de la skin que tengas en ese momento y solo puede usarse **una vez por nivel** (se reinicia al pasar de nivel o al iniciar una nueva partida).
+Con la tecla `D` puedes **agrandar la skin activa** (×1.5, hitbox incluida): se aplica al modelo de la skin que tengas en ese momento y solo puede usarse **una vez por nivel** (al morir o pasar de nivel la nave vuelve a su tamaño de inicio). Mientras estés agrandado, el aviso **NAVE AGRANDADA** permanece visible en el HUD.
+
+Solo con la nave **agrandada** se habilita el **doble disparo**, según el modelo:
+- Naves con cañones laterales (p. ej. Tarántula): una bala desde cada lado.
+- El resto: un abanico centrado de dos balas.
 
 | Skin        | Descripción                                        |
 | ----------- | -------------------------------------------------- |
@@ -65,6 +69,6 @@ Con la tecla `D` puedes **agrandar la skin activa** (×1.5, hitbox incluida): se
 | Águila      | Panelas dobles y doradas                           |
 | Libélula    | Cuerpo estrecho y alargado en cian                 |
 | Escorpión   | Cola con aguijón en rojo/magenta                   |
-| Tarántula   | Morada, el doble de grande, doble puntos y 2 cañones laterales |
+| Tarántula   | Morada, doble puntos y 2 cañones laterales (activos al agrandarse) |
 
 La skin elegida se guarda en `localStorage` y se conserva al recargar la página.
