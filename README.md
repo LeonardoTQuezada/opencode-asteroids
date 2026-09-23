@@ -72,3 +72,15 @@ Solo con la nave **agrandada** se habilita el **doble disparo**, según el model
 | Tarántula   | Morada, doble puntos y 2 cañones laterales (activos al agrandarse) |
 
 La skin elegida se guarda en `localStorage` y se conserva al recargar la página.
+
+## Issues
+
+Al abrir una issue, el workflow [`.github/workflows/issue-triage.yml`](.github/workflows/issue-triage.yml) la clasifica y reformatea automáticamente con opencode (IA) para facilitar su revisión:
+
+- **Clasifica** el issue y asigna 1-2 labels del conjunto permitido (`bug`, `enhancement`, `question`, `documentation`, `needs-triage`), creándolos con su color si aún no existen.
+- **Reformatea el cuerpo** en español, añadiendo:
+  - `## Resumen`: el problema en 1-3 oraciones.
+  - `## Información relevante`: área probable del código (p. ej. `game.js`), severidad sugerida y pasos de reproducción esperados (o aviso si la info no alcanza).
+  - `## Descripción`: versión normalizada del contenido del usuario, corrigiendo el formato markdown.
+  - `_Texto original del issue_`: el texto original de la persona citado línea por línea (`>`), **sin modificar ni traducir**.
+- Autentica contra la API de GitHub con la app token de opencode (intercambio OIDC), sube artefactos de depuración (prompt, salida del modelo, cuerpo generado) y revoca el token al terminar.
