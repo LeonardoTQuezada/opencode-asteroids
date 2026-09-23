@@ -239,6 +239,30 @@ const SKIN_KEY = 'asteroids.skin';
 let currentSkin    = 0;   // índice en SKINS
 let skinNoticeTimer = 0;  // segundos restantes del aviso "SKIN: ..." en el HUD
 
+// Agrandar la nave con la tecla D: una sola vez por nivel
+const ENLARGE_FACTOR = 1.5;   // multiplicador de tamaño al agrandar
+let scaleBoost         = 1;   // 1 = tamaño base de la skin, ENLARGE_FACTOR = agrandada
+let enlargedThisLevel  = false;
+let enlargeNoticeTimer = 0;   // segundos restantes del aviso "TAMAÑO ×..." en el HUD
+
+// Tamaño efectivo de la skin activa (base × agrandamiento del nivel)
+function effectiveScale() {
+  return SKINS[currentSkin].scale * scaleBoost;
+}
+
+function resetEnlarge() {
+  scaleBoost        = 1;
+  enlargedThisLevel = false;
+}
+
+function enlargeShip() {
+  if (enlargedThisLevel) return;
+  enlargedThisLevel  = true;
+  scaleBoost         = ENLARGE_FACTOR;
+  enlargeNoticeTimer = 1.6;
+  if (ship) ship.radius = effectiveScale() * 12;
+}
+
 function loadSkin() {
   try {
     const i = parseInt(localStorage.getItem(SKIN_KEY), 10);
@@ -254,8 +278,8 @@ function cycleSkin() {
   currentSkin = (currentSkin + 1) % SKINS.length;
   saveSkin();
   skinNoticeTimer = 1.6;
-  // La hitbox cambia con el tamaño de la nave activa
-  if (ship) ship.radius = SKINS[currentSkin].scale * 12;
+  // La hitbox cambia con el tamaño (base de la skin × agrandamiento del nivel)
+  if (ship) ship.radius = effectiveScale() * 12;
 }
 
 // Tuning del escudo (power-up "escudo")
@@ -273,7 +297,7 @@ class Ship {
     this.angle  = -Math.PI / 2;
     this.vx     = 0;
     this.vy     = 0;
-    this.radius = SKINS[currentSkin].scale * 12;
+    this.radius = effectiveScale() * 12;
     this.thrusting     = false;
     this.invincible    = 3;
     this.shootCooldown = 0;
@@ -315,14 +339,15 @@ class Ship {
     if (this.shootCooldown > 0 || this.dead) return [];
     this.shootCooldown = 0.2;
     const skin = SKINS[currentSkin];
+    const scale = effectiveScale();
     const shots = [];
 
     // Cada cañón definido en la skin dispara una bala hacia delante
     for (const [lx, ly] of skin.launchers) {
-      const ox = this.x + Math.cos(this.angle) * lx * skin.scale
-                     - Math.sin(this.angle) * ly * skin.scale;
-      const oy = this.y + Math.sin(this.angle) * lx * skin.scale
-                     + Math.cos(this.angle) * ly * skin.scale;
+      const ox = this.x + Math.cos(this.angle) * lx * scale
+                     - Math.sin(this.angle) * ly * scale;
+      const oy = this.y + Math.sin(this.angle) * lx * scale
+                     + Math.cos(this.angle) * ly * scale;
 
       // Power-up "Triple shot": abanico de 3 balas (±10°) por cañón
       if (this.tripleTimer > 0) {
@@ -348,7 +373,7 @@ class Ship {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
-    ctx.scale(skin.scale, skin.scale);
+    ctx.scale(effectiveScale(), effectiveScale());
     ctx.strokeStyle = skin.color;
     ctx.lineWidth   = 1.5;
     ctx.lineJoin    = 'round';
@@ -538,6 +563,7 @@ function initGame() {
   lives  = 3;
   level  = 1;
   state  = 'playing';
+  resetEnlarge();
   spawnAsteroids(4);
 }
 
@@ -546,6 +572,7 @@ function nextLevel() {
   bullets   = [];
   particles = [];
   powerUps  = [];
+  resetEnlarge();
   ship.reset();
   spawnAsteroids(3 + level);
 }
@@ -568,9 +595,11 @@ function killShip() {
 
 // ── Update ────────────────────────────────────────────────────────────────────
 function update(dt) {
-  // Cambiar de skin en cualquier momento (funciona también en pausa/game over)
+  // Cambiar de skin con S, agrandar con D (una vez por nivel)
   if (pressed('KeyS')) cycleSkin();
+  if (pressed('KeyD')) enlargeShip();
   if (skinNoticeTimer > 0) skinNoticeTimer -= dt;
+  if (enlargeNoticeTimer > 0) enlargeNoticeTimer -= dt;
 
   if (state === 'gameover') {
     if (pressed('Space')) initGame();
@@ -766,6 +795,15 @@ function drawHUD() {
     ctx.fillText(`SKIN: ${skin.name}`, W / 2, 46);
     ctx.globalAlpha = 1;
     ctx.fillStyle = '#fff';
+  }
+
+  // Aviso temporal al agrandar la nave (una vez por nivel)
+  if (enlargeNoticeTimer > 0) {
+    ctx.textAlign = 'center';
+    ctx.globalAlpha = Math.min(enlargeNoticeTimer / 0.6, 1);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(`NAVE AGRANDADA ×${ENLARGE_FACTOR}`, W / 2, enlargeNoticeTimer > 0 && skinNoticeTimer > 0 ? 66 : 46);
+    ctx.globalAlpha = 1;
   }
 }
 
