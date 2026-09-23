@@ -569,7 +569,7 @@ function killShip() {
 // ── Update ────────────────────────────────────────────────────────────────────
 function update(dt) {
   // Cambiar de skin en cualquier momento (funciona también en pausa/game over)
-  if (pressed('KeyK')) cycleSkin();
+  if (pressed('KeyS')) cycleSkin();
   if (skinNoticeTimer > 0) skinNoticeTimer -= dt;
 
   if (state === 'gameover') {

@@ -29,7 +29,7 @@ Luego visita `http://localhost:3000`.
 | `←` `→`   | Rotar nave         |
 | `↑`       | Propulsar          |
 | `Espacio` | Disparar           |
-| `K`       | Cambiar skin de la nave |
+| `S`       | Cambiar skin de la nave |
 
 ## Puntuación
 
@@ -54,7 +54,7 @@ Luego visita `http://localhost:3000`.
 
 ## Skins
 
-La nave puede cambiar de apariencia con la tecla `K`. Cada skin define su propia silueta, color y llama del propulsor; los iconos de vidas y la posición de disparo se adaptan automáticamente. La mayoría son puramente cosméticas (hitbox y velocidad idénticas), pero la **Tarántula** altera la jugabilidad: es el doble de grande (hitbox incluida), suma el doble de puntos y dispara dos balas a la vez, una desde cada lado de la nave.
+La nave puede cambiar de apariencia con la tecla `S`. Cada skin define su propia silueta, color y llama del propulsor; los iconos de vidas y la posición de disparo se adaptan automáticamente. La mayoría son puramente cosméticas (hitbox y velocidad idénticas), pero la **Tarántula** altera la jugabilidad: es el doble de grande (hitbox incluida), suma el doble de puntos y dispara dos balas a la vez, una desde cada lado de la nave.
 
 | Skin        | Descripción                                        |
 | ----------- | -------------------------------------------------- |
